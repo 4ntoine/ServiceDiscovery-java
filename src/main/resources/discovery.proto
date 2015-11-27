@@ -1,0 +1,18 @@
+
+// java
+option java_package = "name.antonsmirnov.discovery";
+option java_outer_classname = "Dto";
+
+// request
+message ServiceRequest {
+    required string type = 1;  // service type
+    required int32 port  = 2;  // client port to send response
+}
+
+// response
+message ServiceResponse {
+    required int32 port    = 1;  // service port
+    required string type   = 2;  // service type
+    optional string title  = 3;  // service title
+    optional bytes payload = 4;  // service payload
+}
