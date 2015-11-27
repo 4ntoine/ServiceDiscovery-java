@@ -7,7 +7,7 @@ Services are available to publish their :
 * int port (required)
 * string type (required)
 * string title (optional)
-* byte[] ayload (optional)
+* byte[] payload (optional)
 
 ## Usage
 
