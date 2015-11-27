@@ -2,7 +2,7 @@
 
 ## Intro
 
-It's a simple service discovery framework like Bonjour implemented in pure Java.
+It's a simple service discovery protocol like Bonjour and framework implemented in pure Java.
 Services are available to publish their :
 * int port (required)
 * string type (required)
