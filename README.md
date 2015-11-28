@@ -82,18 +82,18 @@ Services are available to publish their :
         }
     });
 
-### How it works
+## How it works
 
 1. Publisher listens for UDP milticast requests from Locator.
 2. Locator starts listening for response and sends `ServiceRequest` with required service `type` and response `port` values.
 3. Publisher receives request, accepts or rejects it (in listener `boolean onServiceRequestReceived()` or comparing requested and actual service type) and sends `ServiceResponse` over TCP directly to requester host and port.
 4. Locator receives response and notifies service is found.
     
-### Testing
+## Testing
 
 See `DiscoveryTestCase` for more information
 
-### How to build
+## How to build
 
 It's built with Maven:
 > mvn clean install
