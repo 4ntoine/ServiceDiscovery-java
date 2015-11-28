@@ -24,8 +24,38 @@ Services are available to publish their :
 
     // publish
     ServiceInfo serviceInfo = new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD);
-    publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, serviceInfo);
-    publisher.start();
+    publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, serviceInfo, new ServicePublisher.Listener() {
+            @Override
+            public void onPublishStarted() {
+
+            }
+
+            @Override
+            public void onPublishFinished() {
+
+            }
+
+            @Override
+            public boolean onServiceRequestReceived(String host, String type) {
+                return true; // accept requests from all hosts
+            }
+
+            @Override
+            public void onServiceRequestRejected(String host, String type, String requestType) {
+
+            }
+
+            @Override
+            public void onServiceResponseSent(String host) {
+
+            }
+
+            @Override
+            public void onPublishError(Exception e) {
+
+            }
+        });
+        publisher.start();
     
 ### Discover services
 
@@ -47,10 +77,17 @@ Services are available to publish their :
         }
 
         @Override
-        public void onError(Exception e) {
+        public void onDiscoveryError(Exception e) {
 
         }
     });
+
+### How it works
+
+1. Publisher listens for UDP milticast requests from Locator.
+2. Locator starts listening for response and sends `ServiceRequest` with required service `type` and response `port` values.
+3. Publisher receives request, accepts or rejects it (in listener `boolean onServiceRequestReceived()` or comparing requested and actual service type) and sends `ServiceResponse` over TCP directly to requester host and port.
+4. Locator receives response and notifies service is found.
     
 ### Testing
 
