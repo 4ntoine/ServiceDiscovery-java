@@ -44,8 +44,7 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
         setUpLogging();
 
         ServiceInfo serviceInfo = new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD);
-        publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, serviceInfo);
-        publisher.setListener(this);
+        publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, serviceInfo, this);
         publisher.start();
 
         locator = new ServiceLocator(MULTICAST_GROUP, MULTICAST_PORT);
@@ -85,14 +84,16 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
             publisher.stop();
     }
 
+    // discovery listener
+
     @Override
     public void onDiscoveryStarted() {
-        logger.info("Listener: discovery started");
+        logger.info("Discovery listener: discovery started");
     }
 
     @Override
     public void onServiceDiscovered(Service service) {
-        logger.info("Listener: service found on {}:{} of type \"{}\" with title \"{}\" and payload \"{}\"",
+        logger.info("Discovery listener: service found on {}:{} of type \"{}\" with title \"{}\" and payload \"{}\"",
                 service.getHost(),
                 service.getServiceInfo().getPort(),
                 service.getServiceInfo().getType(),
@@ -104,12 +105,47 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
 
     @Override
     public void onDiscoveryFinished() {
-        logger.info("Listener: discovery finished");
+        logger.info("Discovery listener: discovery finished");
         latch.countDown(); // signal we can stop
     }
 
     @Override
-    public void onError(Exception e) {
-        logger.error("Listener: error happened", e);
+    public void onDiscoveryError(Exception e) {
+        logger.error("Discovery listener: error", e);
+    }
+
+    // publish listener
+
+
+    @Override
+    public void onPublishStarted() {
+        logger.info("Publish listener: publish started");
+    }
+
+    @Override
+    public void onPublishFinished() {
+        logger.info("Publish listener: publish finished");
+    }
+
+    @Override
+    public boolean onServiceRequestReceived(String host, String type) {
+        logger.info("Publish listener: accept request from {}", host);
+        return true; // accept all requests
+    }
+
+    @Override
+    public void onServiceRequestRejected(String host, String type, String requestType) {
+        logger.warn("Publish listener: not equal service types from {} (requested \"{}\", but actual is \"{}\")",
+                host, requestType, type);
+    }
+
+    @Override
+    public void onServiceResponseSent(String host) {
+        logger.info("Publish listener: sent response to {}", host);
+    }
+
+    @Override
+    public void onPublishError(Exception e) {
+        logger.error("Publish listener: error", e);
     }
 }

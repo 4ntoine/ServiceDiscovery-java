@@ -18,7 +18,12 @@ public class ServicePublisher {
     private ServiceInfo serviceInfo;
 
     public interface Listener {
-        void onError(Exception e);
+        void onPublishStarted();
+        void onPublishFinished();
+        boolean onServiceRequestReceived(String host, String type); // return true to accept request
+        void onServiceRequestRejected(String host, String type, String requestType); // rejected by not equal service types
+        void onServiceResponseSent(String host);
+        void onPublishError(Exception e);
     }
 
     private Listener listener;
@@ -34,10 +39,11 @@ public class ServicePublisher {
     private String multicastGroup;
     private int multicastPort;
 
-    public ServicePublisher(String multicastGroup, int multicastPort, ServiceInfo serviceInfo) {
+    public ServicePublisher(String multicastGroup, int multicastPort, ServiceInfo serviceInfo, Listener listener) {
         this.multicastGroup = multicastGroup;
         this.multicastPort = multicastPort;
         this.serviceInfo = serviceInfo;
+        this.listener = listener;
     }
 
     /**
@@ -83,9 +89,19 @@ public class ServicePublisher {
 
                 group = InetAddress.getByName(multicastGroup);
                 serverSocket.joinGroup(group);
+
+                // event 'publish started'
+                logger.info("Publish started");
+                listener.onPublishStarted();
             } catch (Exception e) {
                 logger.error("Failed to open datagram socket", e);
-                listener.onError(e);
+
+                // event 'error'
+                listener.onPublishError(e);
+
+                // event 'public finished' (error)
+                logger.info("Publish finished");
+                listener.onPublishFinished();
                 return;
             }
 
@@ -97,11 +113,24 @@ public class ServicePublisher {
 
                     // parse request
                     Dto.ServiceRequest request = Dto.ServiceRequest.parseFrom(requestBytes);
-
                     logger.trace("Request received:\n{}", request);
+
+                    // ask callback to accept request or not
+                    String fromHost = datagramPacket.getAddress().getHostAddress();
+                    if (listener.onServiceRequestReceived(fromHost, request.getType())) {
+                        logger.trace("Request from {} accepted", fromHost);
+                    } else {
+                        logger.trace("Request rejected in callback");
+                        continue;
+                    }
+
+                    // compare current service type and requested one
                     if (!request.getType().equalsIgnoreCase(serviceInfo.getType())) {
                         logger.trace("Request service type {}, but published {}", request.getType(), serviceInfo.getType());
-                        break;
+
+                        // event 'rejected: different service types'
+                        listener.onServiceRequestRejected(fromHost, serviceInfo.getType(), request.getType());
+                        continue;
                     }
 
                     // build response
@@ -110,15 +139,19 @@ public class ServicePublisher {
 
                     // send response
                     sendResponse(datagramPacket, request, response);
-
+                    listener.onServiceResponseSent(datagramPacket.getAddress().getHostAddress());
                 } catch (Exception e) {
                     if (shouldExit.get())
                         return;
 
                     logger.error("Error", e);
-                    listener.onError(e);
+                    listener.onPublishError(e);
                 }
             }
+
+            // event 'publish finished' (success)
+            logger.info("Publish finished");
+            listener.onPublishFinished();
         }
 
         private void sendResponse(DatagramPacket datagramPacket, Dto.ServiceRequest request, Dto.ServiceResponse response) throws IOException {
@@ -151,7 +184,9 @@ public class ServicePublisher {
         private byte[] extractRequestPacket(DatagramPacket datagramPacket) {
             byte[] requestBytes = new byte[datagramPacket.getLength()];
             System.arraycopy(datagramPacket.getData(), 0, requestBytes, 0, datagramPacket.getLength());
+
             logger.trace("Packet received ({} bytes):\n{}", requestBytes.length, requestBytes);
+
             return requestBytes;
         }
 

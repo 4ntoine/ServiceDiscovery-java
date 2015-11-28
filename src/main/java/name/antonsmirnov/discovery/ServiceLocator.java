@@ -44,7 +44,7 @@ public class ServiceLocator {
         void onDiscoveryStarted();
         void onServiceDiscovered(Service service);
         void onDiscoveryFinished();
-        void onError(Exception e);
+        void onDiscoveryError(Exception e);
     }
 
     private Listener listener;
@@ -89,7 +89,7 @@ public class ServiceLocator {
                 serverSocket = ServerSocketFactory.getDefault().createServerSocket(port, 0, null);
             } catch (IOException e) {
                 logger.error("Failed to open socket", e);
-                listener.onError(e);
+                listener.onDiscoveryError(e);
                 return;
             }
 
@@ -102,7 +102,7 @@ public class ServiceLocator {
                     new ClientThread(socket).start();
                 } catch (IOException e) {
                     if (!shouldExit.get() && listener != null)
-                        listener.onError(e);
+                        listener.onDiscoveryError(e);
                 }
             }
 
@@ -143,11 +143,11 @@ public class ServiceLocator {
                         response.getPort(),
                         response.getType(),
                         response.getTitle(),
-                        response.getPayload());
+                        response.hasPayload() ? response.getPayload().toByteArray() : null);
                 listener.onServiceDiscovered(service);
 
             } catch (Exception e) {
-                listener.onError(e);
+                listener.onDiscoveryError(e);
             }
         }
     }
@@ -231,7 +231,7 @@ public class ServiceLocator {
         } catch (IOException e) {
             logger.error("Error", e);
 
-            listener.onError(e);
+            listener.onDiscoveryError(e);
             stopListening();
 
             listener.onDiscoveryFinished();

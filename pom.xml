@@ -6,8 +6,8 @@
 
 	<groupId>name.antonsmirnov.discovery</groupId>
     <artifactId>sd</artifactId>
-    <version>1.0</version>
-    <name>compiler</name>
+    <version>1.1</version>
+    <name>ServiceDiscovery</name>
     <description>Simple service discovery</description>
 
     <developers>
