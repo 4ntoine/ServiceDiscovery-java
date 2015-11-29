@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,9 +21,9 @@ public class ServicePublisher {
     public interface Listener {
         void onPublishStarted();
         void onPublishFinished();
-        boolean onServiceRequestReceived(String host, String type); // return true to accept request
+        boolean onServiceRequestReceived(String host, String type, Mode responseMode); // return true to accept request
         void onServiceRequestRejected(String host, String type, String requestType); // rejected by not equal service types
-        void onServiceResponseSent(String host);
+        void onServiceResponseSent(String requestHost);
         void onPublishError(Exception e);
     }
 
@@ -82,7 +83,7 @@ public class ServicePublisher {
             logger.trace("Started");
 
             try {
-                logger.trace("Opening socket, group={}, port={}", multicastGroup, multicastPort);
+                logger.trace("Opening socket for UDP requests in group={}, port={}", multicastGroup, multicastPort);
 
                 serverSocket = new MulticastSocket(multicastPort);
                 serverSocket.setSoTimeout(1000); // 1s
@@ -105,61 +106,87 @@ public class ServicePublisher {
                 return;
             }
 
-            while (!shouldExit.get()) {
-                try {
-                    // receive request
-                    DatagramPacket datagramPacket = receiveDatagramPacket();
-                    byte[] requestBytes = extractRequestPacket(datagramPacket);
+            try {
+                while (!shouldExit.get()) {
+                    try {
+                        // receive request
+                        DatagramPacket datagramPacket = receiveDatagramPacket();
+                        byte[] requestBytes = extractRequestPacket(datagramPacket);
 
-                    // parse request
-                    Dto.ServiceRequest request = Dto.ServiceRequest.parseFrom(requestBytes);
-                    logger.trace("Request received:\n{}", request);
+                        // parse request
+                        Dto.ServiceRequest request = Dto.ServiceRequest.parseFrom(requestBytes);
+                        logger.debug("Request received:\n{}", request);
 
-                    // ask callback to accept request or not
-                    String fromHost = datagramPacket.getAddress().getHostAddress();
-                    if (listener.onServiceRequestReceived(fromHost, request.getType())) {
-                        logger.trace("Request from {} accepted", fromHost);
-                    } else {
-                        logger.trace("Request rejected in callback");
-                        continue;
+                        // ask callback to accept request or not
+                        String fromHost = datagramPacket.getAddress().getHostAddress();
+                        Mode responseMode = (request.getMode() == Dto.ServiceRequest.Mode.TCP ? Mode.TCP : Mode.UDP);
+                        if (listener.onServiceRequestReceived(fromHost, request.getType(), responseMode)) {
+                            logger.trace("Request from {} accepted", fromHost);
+                        } else {
+                            logger.warn("Request from {} REJECTED", fromHost);
+                            continue;
+                        }
+
+                        // compare current service type and requested one
+                        if (!request.getType().equalsIgnoreCase(serviceInfo.getType())) {
+                            logger.trace("Request service type {}, but published {}", request.getType(), serviceInfo.getType());
+
+                            // event 'rejected: different service types'
+                            listener.onServiceRequestRejected(fromHost, serviceInfo.getType(), request.getType());
+                            continue;
+                        }
+
+                        // build response
+                        Dto.ServiceResponse response = buildResponse();
+                        logger.debug("Response build:\n{}", response);
+
+                        // send response
+                        sendResponse(datagramPacket, request, response);
+                        listener.onServiceResponseSent(datagramPacket.getAddress().getHostAddress());
+                    } catch (Exception e) {
+                        if (shouldExit.get())
+                            return;
+
+                        logger.error("Error", e);
+                        listener.onPublishError(e);
                     }
-
-                    // compare current service type and requested one
-                    if (!request.getType().equalsIgnoreCase(serviceInfo.getType())) {
-                        logger.trace("Request service type {}, but published {}", request.getType(), serviceInfo.getType());
-
-                        // event 'rejected: different service types'
-                        listener.onServiceRequestRejected(fromHost, serviceInfo.getType(), request.getType());
-                        continue;
-                    }
-
-                    // build response
-                    Dto.ServiceResponse response = buildResponse();
-                    logger.trace("Response build:\n{}", response);
-
-                    // send response
-                    sendResponse(datagramPacket, request, response);
-                    listener.onServiceResponseSent(datagramPacket.getAddress().getHostAddress());
-                } catch (Exception e) {
-                    if (shouldExit.get())
-                        return;
-
-                    logger.error("Error", e);
-                    listener.onPublishError(e);
                 }
-            }
 
-            // event 'publish finished' (success)
-            logger.info("Publish finished");
-            listener.onPublishFinished();
+            } finally {
+                // event 'publish finished' (success)
+                logger.info("Publish finished");
+                listener.onPublishFinished();
+            }
         }
 
         private void sendResponse(DatagramPacket datagramPacket, Dto.ServiceRequest request, Dto.ServiceResponse response) throws IOException {
-            Socket socket = new Socket(datagramPacket.getAddress(), request.getPort()); // response port is set in request
-            socket.getOutputStream().write(response.toByteArray());
-            socket.close();
+            if (request.getMode() == Dto.ServiceRequest.Mode.TCP) {
+                sendResponseTcp(datagramPacket, request.getPort(), response);
+            } else {
+                sendResponseUdp(request.getPort(), response);
+            }
 
             logger.trace("Response sent");
+        }
+
+        private void sendResponseTcp(DatagramPacket datagramPacket, int port, Dto.ServiceResponse response) throws IOException {
+            byte[] packet = response.toByteArray();
+            logger.trace("Sending TCP response to {}:{}\n{}\n{}", datagramPacket.getAddress(), port, response, packet);
+
+            Socket socket = SocketFactory.getDefault().createSocket(datagramPacket.getAddress(), port); // response port is set in request
+            socket.getOutputStream().write(packet);
+            socket.close();
+        }
+
+        private void sendResponseUdp(int port, Dto.ServiceResponse response) throws IOException {
+            byte[] packet = response.toByteArray();
+            logger.trace("Sending UDP response to group {}:{}:\n{}\n{}", multicastGroup, port, response, packet);
+
+            MulticastSocket socket = new MulticastSocket();
+            InetAddress group = InetAddress.getByName(multicastGroup);
+            DatagramPacket datagramPacket = new DatagramPacket(packet, packet.length, group, port);
+            socket.send(datagramPacket);
+            socket.close();
         }
 
         private Dto.ServiceResponse buildResponse() {
@@ -228,7 +255,7 @@ public class ServicePublisher {
         if (started)
             return;
 
-        logger.info("Starting");
+        logger.trace("Starting");
         startListening();
         started = true;
     }
@@ -237,7 +264,7 @@ public class ServicePublisher {
         if (!started)
             return;
 
-        logger.info("Stopping");
+        logger.debug("Stopping");
         stopListening();
         started = false;
     }

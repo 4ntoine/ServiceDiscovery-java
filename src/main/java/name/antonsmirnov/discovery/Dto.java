@@ -54,6 +54,23 @@ public final class Dto {
      * </pre>
      */
     int getPort();
+
+    /**
+     * <code>required .ServiceRequest.Mode mode = 3;</code>
+     *
+     * <pre>
+     * response mode
+     * </pre>
+     */
+    boolean hasMode();
+    /**
+     * <code>required .ServiceRequest.Mode mode = 3;</code>
+     *
+     * <pre>
+     * response mode
+     * </pre>
+     */
+    name.antonsmirnov.discovery.Dto.ServiceRequest.Mode getMode();
   }
   /**
    * Protobuf type {@code ServiceRequest}
@@ -122,6 +139,17 @@ public final class Dto {
               port_ = input.readInt32();
               break;
             }
+            case 24: {
+              int rawValue = input.readEnum();
+              name.antonsmirnov.discovery.Dto.ServiceRequest.Mode value = name.antonsmirnov.discovery.Dto.ServiceRequest.Mode.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(3, rawValue);
+              } else {
+                bitField0_ |= 0x00000004;
+                mode_ = value;
+              }
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -159,6 +187,88 @@ public final class Dto {
     @java.lang.Override
     public com.google.protobuf.Parser<ServiceRequest> getParserForType() {
       return PARSER;
+    }
+
+    /**
+     * Protobuf enum {@code ServiceRequest.Mode}
+     */
+    public enum Mode
+        implements com.google.protobuf.ProtocolMessageEnum {
+      /**
+       * <code>TCP = 0;</code>
+       */
+      TCP(0, 0),
+      /**
+       * <code>UDP = 1;</code>
+       */
+      UDP(1, 1),
+      ;
+
+      /**
+       * <code>TCP = 0;</code>
+       */
+      public static final int TCP_VALUE = 0;
+      /**
+       * <code>UDP = 1;</code>
+       */
+      public static final int UDP_VALUE = 1;
+
+
+      public final int getNumber() { return value; }
+
+      public static Mode valueOf(int value) {
+        switch (value) {
+          case 0: return TCP;
+          case 1: return UDP;
+          default: return null;
+        }
+      }
+
+      public static com.google.protobuf.Internal.EnumLiteMap<Mode>
+          internalGetValueMap() {
+        return internalValueMap;
+      }
+      private static com.google.protobuf.Internal.EnumLiteMap<Mode>
+          internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<Mode>() {
+              public Mode findValueByNumber(int number) {
+                return Mode.valueOf(number);
+              }
+            };
+
+      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+          getValueDescriptor() {
+        return getDescriptor().getValues().get(index);
+      }
+      public final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptorForType() {
+        return getDescriptor();
+      }
+      public static final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptor() {
+        return name.antonsmirnov.discovery.Dto.ServiceRequest.getDescriptor().getEnumTypes().get(0);
+      }
+
+      private static final Mode[] VALUES = values();
+
+      public static Mode valueOf(
+          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+          throw new java.lang.IllegalArgumentException(
+            "EnumValueDescriptor is not for this type.");
+        }
+        return VALUES[desc.getIndex()];
+      }
+
+      private final int index;
+      private final int value;
+
+      private Mode(int index, int value) {
+        this.index = index;
+        this.value = value;
+      }
+
+      // @@protoc_insertion_point(enum_scope:ServiceRequest.Mode)
     }
 
     private int bitField0_;
@@ -239,9 +349,33 @@ public final class Dto {
       return port_;
     }
 
+    public static final int MODE_FIELD_NUMBER = 3;
+    private name.antonsmirnov.discovery.Dto.ServiceRequest.Mode mode_;
+    /**
+     * <code>required .ServiceRequest.Mode mode = 3;</code>
+     *
+     * <pre>
+     * response mode
+     * </pre>
+     */
+    public boolean hasMode() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required .ServiceRequest.Mode mode = 3;</code>
+     *
+     * <pre>
+     * response mode
+     * </pre>
+     */
+    public name.antonsmirnov.discovery.Dto.ServiceRequest.Mode getMode() {
+      return mode_;
+    }
+
     private void initFields() {
       type_ = "";
       port_ = 0;
+      mode_ = name.antonsmirnov.discovery.Dto.ServiceRequest.Mode.TCP;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -257,6 +391,10 @@ public final class Dto {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (!hasMode()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -269,6 +407,9 @@ public final class Dto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt32(2, port_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeEnum(3, mode_.getNumber());
       }
       getUnknownFields().writeTo(output);
     }
@@ -286,6 +427,10 @@ public final class Dto {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(2, port_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(3, mode_.getNumber());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -412,6 +557,8 @@ public final class Dto {
         bitField0_ = (bitField0_ & ~0x00000001);
         port_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
+        mode_ = name.antonsmirnov.discovery.Dto.ServiceRequest.Mode.TCP;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -448,6 +595,10 @@ public final class Dto {
           to_bitField0_ |= 0x00000002;
         }
         result.port_ = port_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.mode_ = mode_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -472,6 +623,9 @@ public final class Dto {
         if (other.hasPort()) {
           setPort(other.getPort());
         }
+        if (other.hasMode()) {
+          setMode(other.getMode());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -482,6 +636,10 @@ public final class Dto {
           return false;
         }
         if (!hasPort()) {
+          
+          return false;
+        }
+        if (!hasMode()) {
           
           return false;
         }
@@ -651,6 +809,57 @@ public final class Dto {
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000002);
         port_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private name.antonsmirnov.discovery.Dto.ServiceRequest.Mode mode_ = name.antonsmirnov.discovery.Dto.ServiceRequest.Mode.TCP;
+      /**
+       * <code>required .ServiceRequest.Mode mode = 3;</code>
+       *
+       * <pre>
+       * response mode
+       * </pre>
+       */
+      public boolean hasMode() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>required .ServiceRequest.Mode mode = 3;</code>
+       *
+       * <pre>
+       * response mode
+       * </pre>
+       */
+      public name.antonsmirnov.discovery.Dto.ServiceRequest.Mode getMode() {
+        return mode_;
+      }
+      /**
+       * <code>required .ServiceRequest.Mode mode = 3;</code>
+       *
+       * <pre>
+       * response mode
+       * </pre>
+       */
+      public Builder setMode(name.antonsmirnov.discovery.Dto.ServiceRequest.Mode value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
+        mode_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required .ServiceRequest.Mode mode = 3;</code>
+       *
+       * <pre>
+       * response mode
+       * </pre>
+       */
+      public Builder clearMode() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        mode_ = name.antonsmirnov.discovery.Dto.ServiceRequest.Mode.TCP;
         onChanged();
         return this;
       }
@@ -1661,11 +1870,12 @@ public final class Dto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\017discovery.proto\",\n\016ServiceRequest\022\014\n\004t" +
-      "ype\030\001 \002(\t\022\014\n\004port\030\002 \002(\005\"M\n\017ServiceRespon" +
-      "se\022\014\n\004port\030\001 \002(\005\022\014\n\004type\030\002 \002(\t\022\r\n\005title\030" +
-      "\003 \001(\t\022\017\n\007payload\030\004 \001(\014B\"\n\033name.antonsmir" +
-      "nov.discoveryB\003Dto"
+      "\n\017discovery.proto\"j\n\016ServiceRequest\022\014\n\004t" +
+      "ype\030\001 \002(\t\022\014\n\004port\030\002 \002(\005\022\"\n\004mode\030\003 \002(\0162\024." +
+      "ServiceRequest.Mode\"\030\n\004Mode\022\007\n\003TCP\020\000\022\007\n\003" +
+      "UDP\020\001\"M\n\017ServiceResponse\022\014\n\004port\030\001 \002(\005\022\014" +
+      "\n\004type\030\002 \002(\t\022\r\n\005title\030\003 \001(\t\022\017\n\007payload\030\004" +
+      " \001(\014B\"\n\033name.antonsmirnov.discoveryB\003Dto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -1684,7 +1894,7 @@ public final class Dto {
     internal_static_ServiceRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ServiceRequest_descriptor,
-        new java.lang.String[] { "Type", "Port", });
+        new java.lang.String[] { "Type", "Port", "Mode", });
     internal_static_ServiceResponse_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_ServiceResponse_fieldAccessorTable = new

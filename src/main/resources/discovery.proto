@@ -5,8 +5,14 @@ option java_outer_classname = "Dto";
 
 // request
 message ServiceRequest {
+    enum Mode {
+        TCP = 0;
+        UDP = 1;
+    }
+
     required string type = 1;  // service type
     required int32 port  = 2;  // client port to send response
+    required Mode mode   = 3;  // response mode
 }
 
 // response
