@@ -59,6 +59,7 @@ Services are available to publish their :
     
 ### Discover services
 
+    private static final int RESPONSE_PORT = MULTICAST_PORT + 1;
     locator = new ServiceLocator(MULTICAST_GROUP, MULTICAST_PORT, RESPONSE_PORT, new ServiceLocator.Listener() {
         @Override
         public void onDiscoveryStarted() {
