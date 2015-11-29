@@ -4,10 +4,10 @@
 
 It's a simple service discovery protocol like Bonjour and framework implemented in pure Java.
 Services are available to publish their :
-* int port (required)
-* string type (required)
-* string title (optional)
-* byte[] payload (optional)
+* `int port` (required)
+* `string type` (required)
+* `string title` (optional)
+* `byte[] payload` (optional)
 
 ## Usage
 
@@ -36,7 +36,7 @@ Services are available to publish their :
             }
 
             @Override
-            public boolean onServiceRequestReceived(String host, String type) {
+            public boolean onServiceRequestReceived(String host, String type, Mode mode) {
                 return true; // accept requests from all hosts
             }
 
@@ -46,7 +46,7 @@ Services are available to publish their :
             }
 
             @Override
-            public void onServiceResponseSent(String host) {
+            public void onServiceResponseSent(String requestHost) {
 
             }
 
@@ -59,8 +59,7 @@ Services are available to publish their :
     
 ### Discover services
 
-    locator = new ServiceLocator(MULTICAST_GROUP, MULTICAST_PORT);
-    locator.discoverServices(SERVICE_TYPE, new ServiceLocator.Listener() {
+    locator = new ServiceLocator(MULTICAST_GROUP, MULTICAST_PORT, RESPONSE_PORT, new ServiceLocator.Listener() {
         @Override
         public void onDiscoveryStarted() {
             
@@ -81,22 +80,36 @@ Services are available to publish their :
 
         }
     });
+    locator.setMode(Mode.UDP); // response mode (or Mode.TCP)
+    locator.discoverServices(SERVICE_TYPE);
 
 ## How it works
 
 1. Publisher listens for UDP milticast requests from Locator.
-2. Locator starts listening for response and sends `ServiceRequest` with required service `type` and response `port` values.
-3. Publisher receives request, accepts or rejects it (in listener `boolean onServiceRequestReceived()` or comparing requested and actual service type) and sends `ServiceResponse` over TCP directly to requester host and port.
+2. Locator starts listening for response (UDP or TCP, depends on locator `mode`) and sends `ServiceRequest` with required fields:
+  * `string type` // service type to discover
+  * `Mode mode` // TCP or UDP response mode
+  * `int port` // either TCP or UDP port for response
+3. Publisher receives request, accepts or rejects it (in listener `boolean onServiceRequestReceived()` or comparing requested and actual service type) and sends `ServiceResponse` over TCP directly to requester host and port in request (if TCP mode reponse was in request) or UDP multicast response (same UDP group but port in request).
 4. Locator receives response and notifies service is found.
     
 ## Testing
 
-See `DiscoveryTestCase` for more information
+See `DiscoveryTestCase` for more information. Average discovery time in my home network is about 60 ms.
 
 ## How to build
 
 It's built with Maven:
 > mvn clean install
+
+or
+
+> mvn clean install -DskipTests=true
+
+to build without testing
+
+## License
+Free for non-commercial usage, contact for commercial usage.
 
 ## Author
 Anton Smirnov, dev@antonsmirnov.name
