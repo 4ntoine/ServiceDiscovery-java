@@ -115,5 +115,7 @@ Free for non-commercial usage, contact for commercial usage.
 
 ## Author
 Anton Smirnov
+
 dev [at] antonsmirnov [dot] name
+
 2015
