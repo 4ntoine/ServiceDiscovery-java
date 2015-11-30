@@ -33,7 +33,9 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
     public static final byte[] SERVICE_PAYLOAD = new byte[]{1, 2, 3};
 
     // test network settings
-    private static final String MULTICAST_GROUP = "239.255.255.250";
+    // use any 'unassigned' multicast group
+    // f.e. 239.255.255.250 is reserved by SSDP and later WS-Discovery (https://en.wikipedia.org/wiki/WS-Discovery)
+    private static final String MULTICAST_GROUP = "239.255.255.240";
     private static final int MULTICAST_PORT = 4470;
     private static final int RESPONSE_PORT = MULTICAST_PORT + 1;
 
@@ -93,10 +95,10 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
         logger.info("Service discovered in {} ms", (serviceDiscovered - discoveryStarted));
 
         assertNotNull(foundServiceInfo);
-//        assertEquals(SERVICE_PORT, foundServiceInfo.getPort());
-//        assertEquals(SERVICE_TYPE, foundServiceInfo.getType());
-//        assertEquals(SERVICE_TITLE, foundServiceInfo.getTitle());
-//        assertTrue(Arrays.equals(SERVICE_PAYLOAD, foundServiceInfo.getPayload()));
+        assertEquals(SERVICE_PORT, foundServiceInfo.getPort());
+        assertEquals(SERVICE_TYPE, foundServiceInfo.getType());
+        assertEquals(SERVICE_TITLE, foundServiceInfo.getTitle());
+        assertTrue(Arrays.equals(SERVICE_PAYLOAD, foundServiceInfo.getPayload()));
     }
 
     @Override

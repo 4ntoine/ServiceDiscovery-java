@@ -2,7 +2,7 @@
 
 ## Intro
 
-It's a simple service discovery protocol like Bonjour and framework implemented in pure Java.
+It's a simple service discovery protocol (like Zeroconf or WS-Discovery) and framework implemented in pure Java.
 Services are available to publish their :
 * `int port` (required)
 * `string type` (required)
@@ -19,8 +19,8 @@ Services are available to publish their :
     private static final String SERVICE_TITLE = "Hello world";
     public static final byte[] SERVICE_PAYLOAD = new byte[]{1, 2, 3};
     
-    private static final String MULTICAST_GROUP = "239.255.255.250";
-    private static final int MULTICAST_PORT = 4460;
+    private static final String MULTICAST_GROUP = "239.255.255.240";
+    private static final int MULTICAST_PORT = 4470;
 
     // publish
     ServiceInfo serviceInfo = new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD);
@@ -101,6 +101,7 @@ See `DiscoveryTestCase` for more information. Average discovery time in my home 
 ## How to build
 
 It's built with Maven:
+
 > mvn clean install
 
 or
@@ -113,5 +114,6 @@ to build without testing
 Free for non-commercial usage, contact for commercial usage.
 
 ## Author
-Anton Smirnov, dev@antonsmirnov.name
+Anton Smirnov
+dev [at] antonsmirnov [dot] name
 2015
