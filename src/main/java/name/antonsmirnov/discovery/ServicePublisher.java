@@ -7,6 +7,9 @@ import org.slf4j.LoggerFactory;
 import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -16,14 +19,14 @@ public class ServicePublisher {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
-    private ServiceInfo serviceInfo;
+    private List<ServiceInfo> services = new CopyOnWriteArrayList<ServiceInfo>();
 
     public interface Listener {
         void onPublishStarted();
         void onPublishFinished();
-        boolean onServiceRequestReceived(String host, String type, Mode responseMode); // return true to accept request
-        void onServiceRequestRejected(String host, String type, String requestType); // rejected by not equal service types
-        void onServiceResponseSent(String requestHost);
+        boolean acceptServiceRequest(String host, String type, Mode mode); // return true to accept request
+        void onNoServiceFound(String host, String type, Mode mode); // no service by type found in registered services
+        void onServiceResponseSent(String requestHost, ServiceInfo serviceInfo);
         void onPublishError(Exception e);
     }
 
@@ -40,11 +43,18 @@ public class ServicePublisher {
     private String multicastGroup;
     private int multicastPort;
 
-    public ServicePublisher(String multicastGroup, int multicastPort, ServiceInfo serviceInfo, Listener listener) {
+    public ServicePublisher(String multicastGroup, int multicastPort, Listener listener) {
         this.multicastGroup = multicastGroup;
         this.multicastPort = multicastPort;
-        this.serviceInfo = serviceInfo;
         this.listener = listener;
+    }
+
+    public void registerService(ServiceInfo serviceInfo) {
+        services.add(serviceInfo);
+    }
+
+    public void unregisterService(ServiceInfo serviceInfo) {
+        services.remove(serviceInfo);
     }
 
     /**
@@ -92,7 +102,7 @@ public class ServicePublisher {
                 serverSocket.joinGroup(group);
 
                 // event 'publish started'
-                logger.info("Publish started");
+                logger.debug("Publish started");
                 listener.onPublishStarted();
             } catch (Exception e) {
                 logger.error("Failed to open datagram socket", e);
@@ -101,7 +111,7 @@ public class ServicePublisher {
                 listener.onPublishError(e);
 
                 // event 'public finished' (error)
-                logger.info("Publish finished");
+                logger.debug("Publish finished");
                 listener.onPublishFinished();
                 return;
             }
@@ -120,7 +130,7 @@ public class ServicePublisher {
                         // ask callback to accept request or not
                         String fromHost = datagramPacket.getAddress().getHostAddress();
                         Mode responseMode = (request.getMode() == Dto.ServiceRequest.Mode.TCP ? Mode.TCP : Mode.UDP);
-                        if (listener.onServiceRequestReceived(fromHost, request.getType(), responseMode)) {
+                        if (listener.acceptServiceRequest(fromHost, request.getType(), responseMode)) {
                             logger.trace("Request from {} accepted", fromHost);
                         } else {
                             logger.warn("Request from {} REJECTED", fromHost);
@@ -128,21 +138,23 @@ public class ServicePublisher {
                         }
 
                         // compare current service type and requested one
-                        if (!request.getType().equalsIgnoreCase(serviceInfo.getType())) {
-                            logger.trace("Request service type {}, but published {}", request.getType(), serviceInfo.getType());
-
-                            // event 'rejected: different service types'
-                            listener.onServiceRequestRejected(fromHost, serviceInfo.getType(), request.getType());
-                            continue;
+                        List<ServiceInfo> foundServices = findServices(request.getType());
+                        if (foundServices.size() > 0) {
+                            logger.trace("{} service(s) found", foundServices.size());
+                        } else {
+                            logger.trace("No published services of type {} found", request.getType());
+                            listener.onNoServiceFound(fromHost, request.getType(), responseMode);
                         }
 
                         // build response
-                        Dto.ServiceResponse response = buildResponse();
-                        logger.debug("Response build:\n{}", response);
+                        for (ServiceInfo eachServiceInfo : foundServices) {
+                            Dto.ServiceResponse response = buildResponse(eachServiceInfo);
+                            logger.debug("Response build:\n{}", response);
 
-                        // send response
-                        sendResponse(datagramPacket, request, response);
-                        listener.onServiceResponseSent(datagramPacket.getAddress().getHostAddress());
+                            // send response
+                            sendResponse(datagramPacket, request, response);
+                            listener.onServiceResponseSent(datagramPacket.getAddress().getHostAddress(), eachServiceInfo);
+                        }
                     } catch (Exception e) {
                         if (shouldExit.get())
                             return;
@@ -154,7 +166,7 @@ public class ServicePublisher {
 
             } finally {
                 // event 'publish finished' (success)
-                logger.info("Publish finished");
+                logger.debug("Publish finished");
                 listener.onPublishFinished();
             }
         }
@@ -189,7 +201,7 @@ public class ServicePublisher {
             socket.close();
         }
 
-        private Dto.ServiceResponse buildResponse() {
+        private Dto.ServiceResponse buildResponse(ServiceInfo serviceInfo) {
             Dto.ServiceResponse.Builder builder = Dto.ServiceResponse
                     .newBuilder()
                     .setPort(serviceInfo.getPort())
@@ -231,6 +243,16 @@ public class ServicePublisher {
             }
             return datagramPacket;
         }
+    }
+
+    private List<ServiceInfo> findServices(String type) {
+        List<ServiceInfo> result = new ArrayList<ServiceInfo>();
+
+        for (ServiceInfo eachService : services)
+            if (eachService.getType().equalsIgnoreCase(type))
+                result.add(eachService);
+
+        return result;
     }
 
     private ListenerThread listenerThread;

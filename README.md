@@ -23,8 +23,7 @@ Services are available to publish their :
     private static final int MULTICAST_PORT = 4470;
 
     // publish
-    ServiceInfo serviceInfo = new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD);
-    publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, serviceInfo, new ServicePublisher.Listener() {
+    publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, new ServicePublisher.Listener() {
             @Override
             public void onPublishStarted() {
 
@@ -36,17 +35,17 @@ Services are available to publish their :
             }
 
             @Override
-            public boolean onServiceRequestReceived(String host, String type, Mode mode) {
+            public boolean acceptServiceRequest(String host, String type, Mode mode) {
                 return true; // accept requests from all hosts
             }
 
             @Override
-            public void onServiceRequestRejected(String host, String type, String requestType) {
+            public void onNoServiceFound(String host, String type, Mode mode) {
 
             }
 
             @Override
-            public void onServiceResponseSent(String requestHost) {
+            public void onServiceResponseSent(String requestHost, ServiceInfo serviceInfo) {
 
             }
 
@@ -55,6 +54,7 @@ Services are available to publish their :
 
             }
         });
+        publisher.registerService(new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD));
         publisher.start();
     
 ### Discover services

@@ -119,7 +119,7 @@ public class ServiceLocator {
 
         @Override
         public void run() {
-            logger.info("Discovery started");
+            logger.debug("Discovery started");
             listener.onDiscoveryStarted();
             threadStartedLatch.countDown(); // signal thread started
 
@@ -147,7 +147,7 @@ public class ServiceLocator {
                     }
                 }
             } finally {
-                logger.info("Discovery finished");
+                logger.debug("Discovery finished");
                 listener.onDiscoveryFinished();
                 threadFinishedLatch.countDown();
             }

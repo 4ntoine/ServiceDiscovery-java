@@ -55,8 +55,8 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
         setUpLogging();
 
         // publisher
-        ServiceInfo serviceInfo = new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD);
-        publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, serviceInfo, this);
+        publisher = new ServicePublisher(MULTICAST_GROUP, MULTICAST_PORT, this);
+        publisher.registerService(new ServiceInfo(SERVICE_PORT, SERVICE_TYPE, SERVICE_TITLE, SERVICE_PAYLOAD));
 
         // locator
         locator = new ServiceLocator(MULTICAST_GROUP, MULTICAST_PORT, RESPONSE_PORT, this);
@@ -88,6 +88,7 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
 
         // waiting for response for 60 s max
         boolean serviceFound = latch.await(10, TimeUnit.SECONDS);
+        latch.await();
         publisher.stop();
 
         assertTrue(serviceFound);
@@ -157,20 +158,20 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
     }
 
     @Override
-    public boolean onServiceRequestReceived(String host, String type, Mode mode) {
+    public boolean acceptServiceRequest(String host, String type, Mode mode) {
         logger.info("Publish listener: accept request from {} in mode {}", host, mode);
         return true; // accept all requests
     }
 
     @Override
-    public void onServiceRequestRejected(String host, String type, String requestType) {
-        logger.warn("Publish listener: not equal service types from {} (requested \"{}\", but actual is \"{}\")",
-                host, requestType, type);
+    public void onNoServiceFound(String host, String type, Mode mode) {
+        logger.warn("Publish listener: not equal service types from {} (requested \"{}\" in mode \"{}\")",
+                host, type, mode);
     }
 
     @Override
-    public void onServiceResponseSent(String requestHost) {
-        logger.info("Publish listener: sent response to {}", requestHost);
+    public void onServiceResponseSent(String requestHost, ServiceInfo serviceInfo) {
+        logger.info("Publish listener: sent {} to {}", serviceInfo, requestHost);
     }
 
     @Override
