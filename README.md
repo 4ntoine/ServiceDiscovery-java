@@ -67,7 +67,7 @@ Services are available to publish their :
         }
 
         @Override
-        public void onServiceDiscovered(Service service) {
+        public void onServiceDiscovered(ServiceInfo serviceInfo, String host) {
 
         }
 

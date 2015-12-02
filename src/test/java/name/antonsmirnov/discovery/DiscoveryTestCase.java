@@ -118,20 +118,20 @@ public class DiscoveryTestCase extends TestCase implements ServicePublisher.List
     private Long serviceDiscovered;
 
     @Override
-    public synchronized void onServiceDiscovered(Service service) {
+    public synchronized void onServiceDiscovered(ServiceInfo serviceInfo, String host) {
         // we need to get the first discovered service time
         if (serviceDiscovered == null)
             serviceDiscovered = System.currentTimeMillis();
 
         logger.info("Discovery listener: service found on {}:{} of type \"{}\" with title \"{}\" and payload \"{}\" on {}",
-                service.getHost(),
-                service.getServiceInfo().getPort(),
-                service.getServiceInfo().getType(),
-                service.getServiceInfo().getTitle(),
-                service.getServiceInfo().getPayload(),
+                host,
+                serviceInfo.getPort(),
+                serviceInfo.getType(),
+                serviceInfo.getTitle(),
+                serviceInfo.getPayload(),
             getCurrentTime());
 
-        foundServiceInfo = service.getServiceInfo(); // remember for assertions
+        foundServiceInfo = serviceInfo; // remember for assertions
     }
 
     @Override

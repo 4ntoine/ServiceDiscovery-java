@@ -22,7 +22,7 @@ public class ServiceLocator {
      */
     public interface Listener {
         void onDiscoveryStarted();
-        void onServiceDiscovered(Service service);
+        void onServiceDiscovered(ServiceInfo serviceInfo, String host);
         void onDiscoveryFinished();
         void onDiscoveryError(Exception e);
     }
@@ -258,7 +258,6 @@ public class ServiceLocator {
                 response.getType(),
                 response.getTitle(),
                 response.hasPayload() ? response.getPayload().toByteArray() : null);
-            Service service = new Service(fromHost, serviceInfo);
 
             // event 'service discovered'
             logger.info("Service found on {}:{} of type \"{}\" with title \"{}\" and payload \"{}\"",
@@ -267,7 +266,7 @@ public class ServiceLocator {
                 response.getType(),
                 response.getTitle(),
                 response.hasPayload() ? response.getPayload().toByteArray() : null);
-            listener.onServiceDiscovered(service);
+            listener.onServiceDiscovered(serviceInfo, fromHost);
         }
     }
 
@@ -294,7 +293,6 @@ public class ServiceLocator {
                     response.getTitle(),
                     response.hasPayload() ? response.getPayload().toByteArray() : null);
                 logger.trace("Response received from {}:\n{}", socket, response);
-                Service service = new Service(fromHost, serviceInfo);
 
                 logger.trace("Close client socket");
                 socket.close();
@@ -306,7 +304,7 @@ public class ServiceLocator {
                     response.getType(),
                     response.getTitle(),
                     response.hasPayload() ? response.getPayload().toByteArray() : null);
-                listener.onServiceDiscovered(service);
+                listener.onServiceDiscovered(serviceInfo, fromHost);
             } catch (Exception e) {
                 listener.onDiscoveryError(e);
             }
