@@ -110,6 +110,10 @@ or
 
 to build without testing
 
+## Implementations
+
+See according Objective-C implementation: https://github.com/4ntoine/ServiceDiscovery-ios
+
 ## License
 Free for non-commercial usage, contact for commercial usage.
 
